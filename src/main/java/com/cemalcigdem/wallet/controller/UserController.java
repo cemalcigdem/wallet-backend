@@ -3,7 +3,7 @@ package com.cemalcigdem.wallet.controller;
 import com.cemalcigdem.wallet.dto.UserCreateRequest;
 import com.cemalcigdem.wallet.dto.UserResponse;
 import com.cemalcigdem.wallet.service.UserService;
-import jakarta.annotation.PostConstruct;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,13 +18,8 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostConstruct
-    public void init() {
-        System.out.println(">>> UserController LOADED <<<");
-    }
-
     @PostMapping
-    public ResponseEntity<UserResponse> create(@RequestBody UserCreateRequest request) {
+    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest request) {
         UserResponse created = userService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
