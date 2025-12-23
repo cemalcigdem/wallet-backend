@@ -7,6 +7,8 @@ import com.cemalcigdem.wallet.exception.DuplicateEmailException;
 import com.cemalcigdem.wallet.exception.UserNotFoundException;
 import com.cemalcigdem.wallet.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,11 +28,9 @@ public class UserService {
         return toResponse(userRepository.save(user));
     }
 
-    public List<UserResponse> getAll() {
-        return userRepository.findAll()
-                .stream()
-                .map(this::toResponse)
-                .toList();
+    public Page<UserResponse> getAll(Pageable pageable) {
+        return userRepository.findAll(pageable)
+                .map(this::toResponse);
     }
 
     public UserResponse getById(Long id) {
