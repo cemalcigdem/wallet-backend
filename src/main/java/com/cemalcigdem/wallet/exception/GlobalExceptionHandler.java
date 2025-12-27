@@ -33,4 +33,10 @@ public class GlobalExceptionHandler {
         }
         return ResponseEntity.badRequest().body(errors);
     }
+
+    @ExceptionHandler(DuplicateAccountCurrencyException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateAccount(DuplicateAccountCurrencyException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", ex.getMessage()));
+    }
 }
