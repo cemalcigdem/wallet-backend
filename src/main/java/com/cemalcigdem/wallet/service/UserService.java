@@ -11,8 +11,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -20,11 +18,11 @@ public class UserService {
     private final UserRepository userRepository;
 
     public UserResponse create(UserCreateRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateEmailException(request.getEmail());
+        if (userRepository.existsByEmail(request.email())) {
+            throw new DuplicateEmailException(request.email());
         }
 
-        User user = new User(request.getFullName(), request.getEmail());
+        User user = new User(request.fullName(), request.email());
         return toResponse(userRepository.save(user));
     }
 

@@ -24,7 +24,7 @@ public class AccountService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException(userId));
 
-        String currency = request.getCurrency().toUpperCase();
+        String currency = request.currency().toUpperCase();
 
         if (accountRepository.existsByUserAndCurrency(user, currency)) {
             throw new DuplicateAccountCurrencyException(userId, currency);
