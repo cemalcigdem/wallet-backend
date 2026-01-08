@@ -1,7 +1,6 @@
 package com.cemalcigdem.wallet.service;
 
-import com.cemalcigdem.wallet.domain.Account;
-import com.cemalcigdem.wallet.domain.User;
+import com.cemalcigdem.wallet.domain.*;
 import com.cemalcigdem.wallet.dto.AccountCreateRequest;
 import com.cemalcigdem.wallet.dto.AccountResponse;
 import com.cemalcigdem.wallet.dto.BalanceChangeRequest;
@@ -10,6 +9,7 @@ import com.cemalcigdem.wallet.exception.DuplicateAccountCurrencyException;
 import com.cemalcigdem.wallet.exception.InsufficientBalanceException;
 import com.cemalcigdem.wallet.exception.UserNotFoundException;
 import com.cemalcigdem.wallet.repository.AccountRepository;
+import com.cemalcigdem.wallet.repository.TransactionRepository;
 import com.cemalcigdem.wallet.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +23,7 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
+    private final TransactionRepository transactionRepository;
 
     public AccountResponse create(Long userId, AccountCreateRequest request) {
         User user = userRepository.findById(userId)
@@ -56,6 +57,16 @@ public class AccountService {
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
 
         account.increaseBalance(request.amount());
+
+        Transaction tx = new Transaction(
+                account,
+                TransactionType.DEPOSIT,
+                TransactionStatus.SUCCESS,
+                request.amount(),
+                account.getBalance()
+        );
+        transactionRepository.save(tx);
+
         return toResponse(account);
     }
 
@@ -69,6 +80,17 @@ public class AccountService {
         }
 
         account.decreaseBalance(request.amount());
+
+
+        Transaction tx = new Transaction(
+                account,
+                TransactionType.WITHDRAW,
+                TransactionStatus.SUCCESS,
+                request.amount(),
+                account.getBalance()
+        );
+        transactionRepository.save(tx);
+
         return toResponse(account);
     }
 
