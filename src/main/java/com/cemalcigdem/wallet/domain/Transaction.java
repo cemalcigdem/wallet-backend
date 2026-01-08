@@ -1,0 +1,61 @@
+package com.cemalcigdem.wallet.domain;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+@Entity
+@Table(name = "transactions")
+@Getter
+public class Transaction {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(
+            name = "account_id",
+            foreignKey = @ForeignKey(name = "fk_transaction_account")
+    )
+    private Account account;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TransactionType type;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TransactionStatus status;
+
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal amount;
+
+    @Column(nullable = false, precision = 19, scale = 2)
+    private BigDecimal balanceAfter;
+
+    @Column(nullable = false)
+    private LocalDateTime createdAt;
+
+    protected Transaction() {
+    }
+
+    public Transaction(
+            Account account,
+            TransactionType type,
+            TransactionStatus status,
+            BigDecimal amount,
+            BigDecimal balanceAfter
+    ) {
+        this.account = account;
+        this.type = type;
+        this.status = status;
+        this.amount = amount;
+        this.balanceAfter = balanceAfter;
+        this.createdAt = LocalDateTime.now();
+    }
+
+}
