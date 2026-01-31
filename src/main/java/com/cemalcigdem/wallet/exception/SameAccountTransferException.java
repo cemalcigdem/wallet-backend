@@ -1,0 +1,7 @@
+package com.cemalcigdem.wallet.exception;
+
+public class SameAccountTransferException extends RuntimeException {
+    public SameAccountTransferException(Long accountId) {
+        super("Cannot transfer to the same account. accountId=" + accountId);
+    }
+}

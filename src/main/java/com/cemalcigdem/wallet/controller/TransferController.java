@@ -1,0 +1,25 @@
+package com.cemalcigdem.wallet.controller;
+
+import com.cemalcigdem.wallet.dto.TransferRequest;
+import com.cemalcigdem.wallet.service.AccountService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequiredArgsConstructor
+@RequestMapping("/accounts/{fromAccountId}/transfers")
+public class TransferController {
+
+    private final AccountService accountService;
+
+    @PostMapping
+    public ResponseEntity<Void> transfer(
+            @PathVariable Long fromAccountId,
+            @Valid @RequestBody TransferRequest request
+    ) {
+        accountService.transfer(fromAccountId, request);
+        return ResponseEntity.noContent().build(); // 204
+    }
+}
