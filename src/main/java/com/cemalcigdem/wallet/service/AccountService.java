@@ -4,10 +4,8 @@ import com.cemalcigdem.wallet.domain.*;
 import com.cemalcigdem.wallet.dto.AccountCreateRequest;
 import com.cemalcigdem.wallet.dto.AccountResponse;
 import com.cemalcigdem.wallet.dto.BalanceChangeRequest;
-import com.cemalcigdem.wallet.exception.AccountNotFoundException;
-import com.cemalcigdem.wallet.exception.DuplicateAccountCurrencyException;
-import com.cemalcigdem.wallet.exception.InsufficientBalanceException;
-import com.cemalcigdem.wallet.exception.UserNotFoundException;
+import com.cemalcigdem.wallet.dto.TransferRequest;
+import com.cemalcigdem.wallet.exception.*;
 import com.cemalcigdem.wallet.repository.AccountRepository;
 import com.cemalcigdem.wallet.repository.TransactionRepository;
 import com.cemalcigdem.wallet.repository.UserRepository;
@@ -15,7 +13,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -92,6 +92,54 @@ public class AccountService {
         transactionRepository.save(tx);
 
         return toResponse(account);
+    }
+
+    @Transactional
+    public void transfer(Long fromAccountId, TransferRequest request) {
+        Long toAccountId = request.toAccountId();
+
+        if (fromAccountId.equals(toAccountId)) {
+            throw new SameAccountTransferException(fromAccountId);
+        }
+
+        Account from = accountRepository.findById(fromAccountId)
+                .orElseThrow(() -> new AccountNotFoundException(fromAccountId));
+
+        Account to = accountRepository.findById(toAccountId)
+                .orElseThrow(() -> new AccountNotFoundException(toAccountId));
+
+        if (!from.getCurrency().equals(to.getCurrency())) {
+            throw new CurrencyMismatchException(fromAccountId, toAccountId);
+        }
+
+        BigDecimal amount = request.amount();
+        if (from.getBalance().compareTo(amount) < 0) {
+            throw new InsufficientBalanceException(fromAccountId, from.getBalance(), amount);
+        }
+
+        from.decreaseBalance(amount);
+        to.increaseBalance(amount);
+
+        String transferRef = UUID.randomUUID().toString();
+
+        Transaction outTx = new Transaction(
+                from,
+                TransactionType.TRANSFER_OUT,
+                TransactionStatus.SUCCESS,
+                amount,
+                from.getBalance()
+        );
+
+        Transaction inTx = new Transaction(
+                to,
+                TransactionType.TRANSFER_IN,
+                TransactionStatus.SUCCESS,
+                amount,
+                to.getBalance()
+        );
+
+        transactionRepository.save(outTx);
+        transactionRepository.save(inTx);
     }
 
     private AccountResponse toResponse(Account account) {

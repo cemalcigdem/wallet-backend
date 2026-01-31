@@ -58,4 +58,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("message", "Concurrent modification detected. Please retry."));
     }
+
+    @ExceptionHandler(CurrencyMismatchException.class)
+    public ResponseEntity<Map<String, String>> handleCurrencyMismatch(CurrencyMismatchException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(SameAccountTransferException.class)
+    public ResponseEntity<Map<String, String>> handleSameAccountTransfer(SameAccountTransferException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
+    }
 }
