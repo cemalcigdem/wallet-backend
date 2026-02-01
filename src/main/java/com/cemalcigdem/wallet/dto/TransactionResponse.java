@@ -12,6 +12,7 @@ public record TransactionResponse(
         TransactionStatus status,
         BigDecimal amount,
         BigDecimal balanceAfter,
+        String referenceId,
         LocalDateTime createdAt
 ) {
 }

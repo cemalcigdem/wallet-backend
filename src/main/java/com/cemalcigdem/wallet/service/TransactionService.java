@@ -29,6 +29,7 @@ public class TransactionService {
                         t.getStatus(),
                         t.getAmount(),
                         t.getBalanceAfter(),
+                        t.getReferenceId(),
                         t.getCreatedAt()
                 ))
                 .toList();

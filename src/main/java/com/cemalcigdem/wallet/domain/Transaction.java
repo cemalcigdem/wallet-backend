@@ -30,6 +30,8 @@ public class Transaction {
     @Column(nullable = false)
     private TransactionStatus status;
 
+    @Column(length = 36)
+    private String referenceId;
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal amount;
@@ -50,11 +52,23 @@ public class Transaction {
             BigDecimal amount,
             BigDecimal balanceAfter
     ) {
+        this(account, type, status, amount, balanceAfter, null);
+    }
+
+    public Transaction(
+            Account account,
+            TransactionType type,
+            TransactionStatus status,
+            BigDecimal amount,
+            BigDecimal balanceAfter,
+            String referenceId
+    ) {
         this.account = account;
         this.type = type;
         this.status = status;
         this.amount = amount;
         this.balanceAfter = balanceAfter;
+        this.referenceId = referenceId;
         this.createdAt = LocalDateTime.now();
     }
 
