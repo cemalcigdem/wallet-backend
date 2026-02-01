@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
 
@@ -19,4 +20,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             order by t.createdAt desc
             """)
     List<Transaction> findLatestByAccountId(@Param("accountId") Long accountId);
+
+    Optional<Transaction> findByIdempotencyKey(String idempotencyKey);
+
+    boolean existsByIdempotencyKey(String idempotencyKey);
 }

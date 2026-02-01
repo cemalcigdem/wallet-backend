@@ -17,9 +17,10 @@ public class TransferController {
     @PostMapping
     public ResponseEntity<Void> transfer(
             @PathVariable Long fromAccountId,
-            @Valid @RequestBody TransferRequest request
+            @Valid @RequestBody TransferRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
     ) {
-        accountService.transfer(fromAccountId, request);
-        return ResponseEntity.noContent().build(); // 204
+        accountService.transfer(fromAccountId, request, idempotencyKey);
+        return ResponseEntity.noContent().build();
     }
 }
