@@ -68,4 +68,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleSameAccountTransfer(SameAccountTransferException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
     }
+
+    @ExceptionHandler(DuplicateRequestException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicate(DuplicateRequestException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
 }

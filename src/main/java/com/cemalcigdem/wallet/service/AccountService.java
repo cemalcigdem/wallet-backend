@@ -52,7 +52,11 @@ public class AccountService {
     }
 
     @Transactional
-    public AccountResponse deposit(Long accountId, BalanceChangeRequest request) {
+    public AccountResponse deposit(Long accountId, BalanceChangeRequest request, String idempotencyKey) {
+        if (idempotencyKey != null && transactionRepository.existsByIdempotencyKey(idempotencyKey)) {
+            throw new DuplicateRequestException(idempotencyKey);
+        }
+
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
 
@@ -63,7 +67,9 @@ public class AccountService {
                 TransactionType.DEPOSIT,
                 TransactionStatus.SUCCESS,
                 request.amount(),
-                account.getBalance()
+                account.getBalance(),
+                null,
+                idempotencyKey
         );
         transactionRepository.save(tx);
 
@@ -71,7 +77,7 @@ public class AccountService {
     }
 
     @Transactional
-    public AccountResponse withdraw(Long accountId, BalanceChangeRequest request) {
+    public AccountResponse withdraw(Long accountId, BalanceChangeRequest request, String idempotencyKey) {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
 
@@ -87,7 +93,9 @@ public class AccountService {
                 TransactionType.WITHDRAW,
                 TransactionStatus.SUCCESS,
                 request.amount(),
-                account.getBalance()
+                account.getBalance(),
+                null,
+                idempotencyKey
         );
         transactionRepository.save(tx);
 
@@ -95,7 +103,11 @@ public class AccountService {
     }
 
     @Transactional
-    public void transfer(Long fromAccountId, TransferRequest request) {
+    public void transfer(Long fromAccountId, TransferRequest request, String idempotencyKey) {
+        if (idempotencyKey != null && transactionRepository.existsByIdempotencyKey(idempotencyKey)) {
+            throw new DuplicateRequestException(idempotencyKey);
+        }
+
         Long toAccountId = request.toAccountId();
 
         if (fromAccountId.equals(toAccountId)) {
@@ -128,7 +140,8 @@ public class AccountService {
                 TransactionStatus.SUCCESS,
                 amount,
                 from.getBalance(),
-                transferRef
+                transferRef,
+                idempotencyKey
         );
 
         Transaction inTx = new Transaction(

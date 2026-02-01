@@ -18,16 +18,18 @@ public class BalanceController {
     @PostMapping("/deposit")
     public ResponseEntity<AccountResponse> deposit(
             @PathVariable Long accountId,
-            @Valid @RequestBody BalanceChangeRequest request
+            @Valid @RequestBody BalanceChangeRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
     ) {
-        return ResponseEntity.ok(accountService.deposit(accountId, request));
+        return ResponseEntity.ok(accountService.deposit(accountId, request, idempotencyKey));
     }
 
     @PostMapping("/withdraw")
     public ResponseEntity<AccountResponse> withdraw(
             @PathVariable Long accountId,
-            @Valid @RequestBody BalanceChangeRequest request
+            @Valid @RequestBody BalanceChangeRequest request,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
     ) {
-        return ResponseEntity.ok(accountService.withdraw(accountId, request));
+        return ResponseEntity.ok(accountService.withdraw(accountId, request, idempotencyKey));
     }
 }
