@@ -127,7 +127,8 @@ public class AccountService {
                 TransactionType.TRANSFER_OUT,
                 TransactionStatus.SUCCESS,
                 amount,
-                from.getBalance()
+                from.getBalance(),
+                transferRef
         );
 
         Transaction inTx = new Transaction(
@@ -135,7 +136,8 @@ public class AccountService {
                 TransactionType.TRANSFER_IN,
                 TransactionStatus.SUCCESS,
                 amount,
-                to.getBalance()
+                to.getBalance(),
+                transferRef
         );
 
         transactionRepository.save(outTx);
