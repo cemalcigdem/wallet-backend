@@ -1,10 +1,13 @@
 package com.cemalcigdem.wallet.exception;
 
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -69,8 +72,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", ex.getMessage()));
     }
 
-    @ExceptionHandler(DuplicateRequestException.class)
-    public ResponseEntity<Map<String, String>> handleDuplicate(DuplicateRequestException ex) {
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<Map<String, String>> handleMissingHeader(MissingRequestHeaderException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("message", "Missing required header: " + ex.getHeaderName()));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, String>> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, String> errors = new HashMap<>();
+        for (ConstraintViolation<?> violation : ex.getConstraintViolations()) {
+            String field = violation.getPropertyPath() == null ? "request" : violation.getPropertyPath().toString();
+            errors.put(field, violation.getMessage());
+        }
+        return ResponseEntity.badRequest().body(errors);
+    }
+
+    @ExceptionHandler(IdempotencyConflictException.class)
+    public ResponseEntity<Map<String, String>> handleIdempotencyConflict(IdempotencyConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("message", ex.getMessage()));
     }

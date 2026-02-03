@@ -48,6 +48,9 @@ public class Transaction {
     @Column(name = "counterparty_account_id")
     private Long counterpartyAccountId;
 
+    @Column(length = 64)
+    private String requestHash;
+
     protected Transaction() {
     }
 
@@ -58,7 +61,7 @@ public class Transaction {
             BigDecimal amount,
             BigDecimal balanceAfter
     ) {
-        this(account, type, status, amount, balanceAfter, null, null, null);
+        this(account, type, status, amount, balanceAfter, null, null, null, null);
     }
 
     public Transaction(Account account,
@@ -67,7 +70,7 @@ public class Transaction {
                        BigDecimal amount,
                        BigDecimal balanceAfter,
                        String referenceId) {
-        this(account, type, status, amount, balanceAfter, referenceId, null, null);
+        this(account, type, status, amount, balanceAfter, referenceId, null, null, null);
     }
 
     public Transaction(
@@ -78,7 +81,7 @@ public class Transaction {
             BigDecimal balanceAfter,
             String referenceId,
             String idempotencyKey) {
-        this(account, type, status, amount, balanceAfter, referenceId, idempotencyKey, null);
+        this(account, type, status, amount, balanceAfter, referenceId, idempotencyKey, null, null);
     }
 
     public Transaction(
@@ -89,7 +92,8 @@ public class Transaction {
             BigDecimal balanceAfter,
             String referenceId,
             String idempotencyKey,
-            Long counterpartyAccountId
+            Long counterpartyAccountId,
+            String requestHash
     ) {
         this.account = account;
         this.type = type;
@@ -100,6 +104,7 @@ public class Transaction {
         this.idempotencyKey = idempotencyKey;
         this.createdAt = LocalDateTime.now();
         this.counterpartyAccountId = counterpartyAccountId;
+        this.requestHash = requestHash;
     }
 
 }

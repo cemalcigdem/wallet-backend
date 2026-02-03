@@ -1,7 +1,7 @@
 package com.cemalcigdem.wallet.repository;
 
-import com.cemalcigdem.wallet.domain.Account;
 import com.cemalcigdem.wallet.domain.Transaction;
+import com.cemalcigdem.wallet.domain.TransactionType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
-
-    List<Transaction> findByAccount(Account account);
 
     @Query("""
             select t
@@ -23,7 +21,5 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     Optional<Transaction> findByIdempotencyKey(String idempotencyKey);
 
-    boolean existsByIdempotencyKey(String idempotencyKey);
-
-    Optional<Transaction> findFirstByIdempotencyKey(String idempotencyKey);
+    Optional<Transaction> findByIdempotencyKeyAndType(String key, TransactionType type);
 }
