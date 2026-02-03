@@ -1,6 +1,7 @@
 package com.cemalcigdem.wallet.controller;
 
 import com.cemalcigdem.wallet.dto.TransferRequest;
+import com.cemalcigdem.wallet.dto.TransferResponse;
 import com.cemalcigdem.wallet.service.AccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +16,12 @@ public class TransferController {
     private final AccountService accountService;
 
     @PostMapping
-    public ResponseEntity<Void> transfer(
+    public ResponseEntity<TransferResponse> transfer(
             @PathVariable Long fromAccountId,
             @Valid @RequestBody TransferRequest request,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
     ) {
         accountService.transfer(fromAccountId, request, idempotencyKey);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(accountService.transfer(fromAccountId, request, idempotencyKey));
     }
 }
