@@ -1,10 +1,7 @@
 package com.cemalcigdem.wallet.service;
 
 import com.cemalcigdem.wallet.domain.*;
-import com.cemalcigdem.wallet.dto.AccountCreateRequest;
-import com.cemalcigdem.wallet.dto.AccountResponse;
-import com.cemalcigdem.wallet.dto.BalanceChangeRequest;
-import com.cemalcigdem.wallet.dto.TransferRequest;
+import com.cemalcigdem.wallet.dto.*;
 import com.cemalcigdem.wallet.exception.*;
 import com.cemalcigdem.wallet.repository.AccountRepository;
 import com.cemalcigdem.wallet.repository.TransactionRepository;
@@ -103,7 +100,7 @@ public class AccountService {
     }
 
     @Transactional
-    public void transfer(Long fromAccountId, TransferRequest request, String idempotencyKey) {
+    public TransferResponse transfer(Long fromAccountId, TransferRequest request, String idempotencyKey) {
         if (idempotencyKey != null && transactionRepository.existsByIdempotencyKey(idempotencyKey)) {
             throw new DuplicateRequestException(idempotencyKey);
         }
@@ -141,7 +138,8 @@ public class AccountService {
                 amount,
                 from.getBalance(),
                 transferRef,
-                idempotencyKey
+                idempotencyKey,
+                to.getId()
         );
 
         Transaction inTx = new Transaction(
@@ -150,11 +148,15 @@ public class AccountService {
                 TransactionStatus.SUCCESS,
                 amount,
                 to.getBalance(),
-                transferRef
+                transferRef,
+                null,
+                from.getId()
         );
 
         transactionRepository.save(outTx);
         transactionRepository.save(inTx);
+
+        return new TransferResponse(transferRef, from.getId(), to.getId(), amount);
     }
 
     private AccountResponse toResponse(Account account) {
