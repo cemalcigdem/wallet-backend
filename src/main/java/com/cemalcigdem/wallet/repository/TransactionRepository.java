@@ -1,6 +1,5 @@
 package com.cemalcigdem.wallet.repository;
 
-import com.cemalcigdem.wallet.domain.Account;
 import com.cemalcigdem.wallet.domain.Transaction;
 import com.cemalcigdem.wallet.domain.TransactionType;
 import org.springframework.data.domain.Page;
@@ -14,8 +13,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
-
-    List<Transaction> findByAccount(Account account);
 
     @Query("""
             select t

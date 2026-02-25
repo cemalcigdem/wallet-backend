@@ -6,11 +6,14 @@ import com.cemalcigdem.wallet.exception.*;
 import com.cemalcigdem.wallet.repository.AccountRepository;
 import com.cemalcigdem.wallet.repository.TransactionRepository;
 import com.cemalcigdem.wallet.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.List;
 import java.util.UUID;
 
@@ -50,12 +53,24 @@ public class AccountService {
 
     @Transactional
     public AccountResponse deposit(Long accountId, BalanceChangeRequest request, String idempotencyKey) {
-        if (idempotencyKey != null && transactionRepository.existsByIdempotencyKey(idempotencyKey)) {
-            throw new DuplicateRequestException(idempotencyKey);
-        }
-
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
+
+        String hash = hashDeposit(accountId, request.amount());
+
+        var existingOpt = transactionRepository.findByIdempotencyKey(idempotencyKey);
+        if (existingOpt.isPresent()) {
+            Transaction existing = existingOpt.get();
+
+            if (!hash.equals(existing.getRequestHash())) {
+                throw new IdempotencyConflictException(
+                        idempotencyKey,
+                        "Payload differs from the original request."
+                );
+            }
+
+            return new AccountResponse(account.getId(), account.getCurrency(), existing.getBalanceAfter(), account.getCreatedAt());
+        }
 
         account.increaseBalance(request.amount());
 
@@ -66,11 +81,25 @@ public class AccountService {
                 request.amount(),
                 account.getBalance(),
                 null,
-                idempotencyKey
+                idempotencyKey,
+                null,
+                hash
         );
-        transactionRepository.save(tx);
 
-        return toResponse(account);
+        try {
+            transactionRepository.save(tx);
+            return toResponse(account);
+        } catch (DataIntegrityViolationException e) {
+            Transaction existing = transactionRepository.findByIdempotencyKey(idempotencyKey)
+                    .orElseThrow();
+
+            return new AccountResponse(
+                    account.getId(),
+                    account.getCurrency(),
+                    existing.getBalanceAfter(),
+                    account.getCreatedAt()
+            );
+        }
     }
 
     @Transactional
@@ -78,12 +107,27 @@ public class AccountService {
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new AccountNotFoundException(accountId));
 
+        String hash = hashWithdraw(accountId, request.amount());
+
+        var existingOpt = transactionRepository.findByIdempotencyKey(idempotencyKey);
+        if (existingOpt.isPresent()) {
+            Transaction existing = existingOpt.get();
+
+            if (!hash.equals(existing.getRequestHash())) {
+                throw new IdempotencyConflictException(
+                        idempotencyKey,
+                        "Payload differs from the original request."
+                );
+            }
+
+            return new AccountResponse(account.getId(), account.getCurrency(), existing.getBalanceAfter(), account.getCreatedAt());
+        }
+
         if (account.getBalance().compareTo(request.amount()) < 0) {
             throw new InsufficientBalanceException(accountId, account.getBalance(), request.amount());
         }
 
         account.decreaseBalance(request.amount());
-
 
         Transaction tx = new Transaction(
                 account,
@@ -92,19 +136,50 @@ public class AccountService {
                 request.amount(),
                 account.getBalance(),
                 null,
-                idempotencyKey
+                idempotencyKey,
+                null,
+                hash
         );
-        transactionRepository.save(tx);
 
-        return toResponse(account);
+        try {
+            transactionRepository.save(tx);
+            return toResponse(account);
+        } catch (DataIntegrityViolationException e) {
+            Transaction existing = transactionRepository.findByIdempotencyKey(idempotencyKey)
+                    .orElseThrow();
+
+            return new AccountResponse(
+                    account.getId(),
+                    account.getCurrency(),
+                    existing.getBalanceAfter(),
+                    account.getCreatedAt()
+            );
+        }
     }
 
     @Transactional
     public TransferResponse transfer(Long fromAccountId, TransferRequest request, String idempotencyKey) {
-        if (idempotencyKey != null && transactionRepository.existsByIdempotencyKey(idempotencyKey)) {
-            throw new DuplicateRequestException(idempotencyKey);
-        }
+        String requestHash = hashTransfer(
+                fromAccountId,
+                request.toAccountId(),
+                request.amount()
+        );
 
+        return transactionRepository
+                .findByIdempotencyKeyAndType(idempotencyKey, TransactionType.TRANSFER_OUT)
+                .map(existingTx -> {
+                    if (!requestHash.equals(existingTx.getRequestHash())) {
+                        throw new IdempotencyConflictException(
+                                idempotencyKey,
+                                "Transfer payload differs from the original request"
+                        );
+                    }
+                    return toTransferResponseFromTransaction(existingTx);
+                })
+                .orElseGet(() -> doTransfer(fromAccountId, request, idempotencyKey, requestHash));
+    }
+
+    private TransferResponse doTransfer(Long fromAccountId, TransferRequest request, String idempotencyKey, String requestHash) {
         Long toAccountId = request.toAccountId();
 
         if (fromAccountId.equals(toAccountId)) {
@@ -139,7 +214,8 @@ public class AccountService {
                 from.getBalance(),
                 transferRef,
                 idempotencyKey,
-                to.getId()
+                to.getId(),
+                requestHash
         );
 
         Transaction inTx = new Transaction(
@@ -150,13 +226,22 @@ public class AccountService {
                 to.getBalance(),
                 transferRef,
                 null,
-                from.getId()
+                from.getId(),
+                null
         );
 
-        transactionRepository.save(outTx);
-        transactionRepository.save(inTx);
+        try {
+            transactionRepository.save(outTx);
+            transactionRepository.save(inTx);
 
-        return new TransferResponse(transferRef, from.getId(), to.getId(), amount);
+            return new TransferResponse(transferRef, from.getId(), to.getId(), amount);
+        } catch (DataIntegrityViolationException e) {
+            Transaction existing = transactionRepository
+                    .findByIdempotencyKeyAndType(idempotencyKey, TransactionType.TRANSFER_OUT)
+                    .orElseThrow();
+
+            return toTransferResponseFromTransaction(existing);
+        }
     }
 
     private AccountResponse toResponse(Account account) {
@@ -166,5 +251,46 @@ public class AccountService {
                 account.getBalance(),
                 account.getCreatedAt()
         );
+    }
+
+    private TransferResponse toTransferResponseFromTransaction(Transaction tx) {
+        String transferRef = tx.getReferenceId();
+        BigDecimal amount = tx.getAmount();
+
+        Long accountId = tx.getAccount().getId();
+        Long counterparty = tx.getCounterpartyAccountId();
+
+        return new TransferResponse(transferRef, accountId, counterparty, amount);
+    }
+
+    private String normalizeAmount(BigDecimal amount) {
+        return amount.stripTrailingZeros().toPlainString();
+    }
+
+    private String sha256Hex(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hash) sb.append(String.format("%02x", b));
+            return sb.toString();
+        } catch (Exception e) {
+            throw new IllegalStateException("Failed to compute request hash", e);
+        }
+    }
+
+    private String hashDeposit(Long accountId, BigDecimal amount) {
+        String canonical = "DEPOSIT|accountId=" + accountId + "|amount=" + normalizeAmount(amount);
+        return sha256Hex(canonical);
+    }
+
+    private String hashWithdraw(Long accountId, BigDecimal amount) {
+        String canonical = "WITHDRAW|accountId=" + accountId + "|amount=" + normalizeAmount(amount);
+        return sha256Hex(canonical);
+    }
+
+    private String hashTransfer(Long fromId, Long toId, BigDecimal amount) {
+        String canonical = "TRANSFER|from=" + fromId + "|to=" + toId + "|amount=" + normalizeAmount(amount);
+        return sha256Hex(canonical);
     }
 }
