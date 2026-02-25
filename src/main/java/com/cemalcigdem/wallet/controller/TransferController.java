@@ -4,10 +4,13 @@ import com.cemalcigdem.wallet.dto.TransferRequest;
 import com.cemalcigdem.wallet.dto.TransferResponse;
 import com.cemalcigdem.wallet.service.AccountService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Validated
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/accounts/{fromAccountId}/transfers")
@@ -19,9 +22,9 @@ public class TransferController {
     public ResponseEntity<TransferResponse> transfer(
             @PathVariable Long fromAccountId,
             @Valid @RequestBody TransferRequest request,
-            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey
+            @RequestHeader(value = "Idempotency-Key") @NotBlank String idempotencyKey
     ) {
-        accountService.transfer(fromAccountId, request, idempotencyKey);
-        return ResponseEntity.ok(accountService.transfer(fromAccountId, request, idempotencyKey));
+        String normalizedKey = idempotencyKey.trim();
+        return ResponseEntity.ok(accountService.transfer(fromAccountId, request, normalizedKey));
     }
 }
