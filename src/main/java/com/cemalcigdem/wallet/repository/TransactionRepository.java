@@ -22,11 +22,7 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
             """)
     List<Transaction> findLatestByAccountId(@Param("accountId") Long accountId);
 
-    Optional<Transaction> findByIdempotencyKey(String idempotencyKey);
-
-    boolean existsByIdempotencyKey(String idempotencyKey);
-
-    Optional<Transaction> findFirstByIdempotencyKey(String idempotencyKey);
+    Optional<Transaction> findByIdempotencyKeyAndType(String idempotencyKey, TransactionType type);
 
     @Query("""
                 select t
