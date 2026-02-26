@@ -58,7 +58,7 @@ public class AccountService {
 
         String hash = hashDeposit(accountId, request.amount());
 
-        var existingOpt = transactionRepository.findByIdempotencyKey(idempotencyKey);
+        var existingOpt = transactionRepository.findByIdempotencyKeyAndType(idempotencyKey, TransactionType.DEPOSIT);
         if (existingOpt.isPresent()) {
             Transaction existing = existingOpt.get();
 
@@ -90,7 +90,7 @@ public class AccountService {
             transactionRepository.save(tx);
             return toResponse(account);
         } catch (DataIntegrityViolationException e) {
-            Transaction existing = transactionRepository.findByIdempotencyKey(idempotencyKey)
+            Transaction existing = transactionRepository.findByIdempotencyKeyAndType(idempotencyKey, TransactionType.DEPOSIT)
                     .orElseThrow();
 
             return new AccountResponse(
@@ -109,7 +109,7 @@ public class AccountService {
 
         String hash = hashWithdraw(accountId, request.amount());
 
-        var existingOpt = transactionRepository.findByIdempotencyKey(idempotencyKey);
+        var existingOpt = transactionRepository.findByIdempotencyKeyAndType(idempotencyKey, TransactionType.WITHDRAW);
         if (existingOpt.isPresent()) {
             Transaction existing = existingOpt.get();
 
@@ -145,7 +145,7 @@ public class AccountService {
             transactionRepository.save(tx);
             return toResponse(account);
         } catch (DataIntegrityViolationException e) {
-            Transaction existing = transactionRepository.findByIdempotencyKey(idempotencyKey)
+            Transaction existing = transactionRepository.findByIdempotencyKeyAndType(idempotencyKey, TransactionType.WITHDRAW)
                     .orElseThrow();
 
             return new AccountResponse(
