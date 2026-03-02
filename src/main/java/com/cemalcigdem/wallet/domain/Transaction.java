@@ -59,36 +59,6 @@ public class Transaction {
             TransactionType type,
             TransactionStatus status,
             BigDecimal amount,
-            BigDecimal balanceAfter
-    ) {
-        this(account, type, status, amount, balanceAfter, null, null, null, null);
-    }
-
-    public Transaction(Account account,
-                       TransactionType type,
-                       TransactionStatus status,
-                       BigDecimal amount,
-                       BigDecimal balanceAfter,
-                       String referenceId) {
-        this(account, type, status, amount, balanceAfter, referenceId, null, null, null);
-    }
-
-    public Transaction(
-            Account account,
-            TransactionType type,
-            TransactionStatus status,
-            BigDecimal amount,
-            BigDecimal balanceAfter,
-            String referenceId,
-            String idempotencyKey) {
-        this(account, type, status, amount, balanceAfter, referenceId, idempotencyKey, null, null);
-    }
-
-    public Transaction(
-            Account account,
-            TransactionType type,
-            TransactionStatus status,
-            BigDecimal amount,
             BigDecimal balanceAfter,
             String referenceId,
             String idempotencyKey,
